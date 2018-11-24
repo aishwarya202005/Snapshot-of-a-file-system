@@ -1,8 +1,26 @@
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 #include <openssl/md5.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <iostream>
+#include <termios.h>
+#include <time.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <grp.h>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <iomanip>
+#include <errno.h>
+
 using namespace std;
 #define M 65536
-#define BLOCK_SIZE 2
+#define BLOCK_SIZE 512
 
 // sending from A and B
 // Divide snapshot into fixed size chunks
@@ -11,9 +29,12 @@ vector<string> roll_check_snap; //weak checksum
 vector<string> md_5_snap; //strong checksum
 vector<string> roll_check_file; //weak checksum
 vector<string> md_5_file; //strong checksum
-vector<string> changes;
+vector<char> changes;
 vector<int> vec_same_index; 
 FILE *iptr;
+
+
+
 
 
 vector<long long> calculate_rolling(char input_buffer[],size_t bytesread)
@@ -114,8 +135,7 @@ void get_successive_chunks(string file_path) // for A
 		char prev,curr;
 		while((bytesread = fread(input_buffer, 1, sizeof(input_buffer), iptr)) > 0)
 		{ 
-			if(bytesread!=BLOCK_SIZE)
-				break;
+			
         	cout<<bytesread<<" "<<input_buffer<<endl; 
 
 			string md5_hash = calculate_md5(input_buffer,bytesread);
@@ -179,6 +199,8 @@ void get_successive_chunks(string file_path) // for A
 			count++;
 			// cout<<"\ncount is "<<count;
 			// cout<<"\n------------------------------------------------------------------\n";
+			// if(bytesread!=BLOCK_SIZE)
+			// 	break;
 		} 
 		fclose(iptr);
 	}
@@ -188,6 +210,14 @@ void get_successive_chunks(string file_path) // for A
 void compare_files(string file_path) 
 {
 	int flag,j;	
+	char from_file[5];
+	memset(from_file,0x0,sizeof(from_file));
+	iptr=fopen(file_path.c_str(),"rb");
+	if(iptr==NULL)
+	{
+		cout<<"File can not be opened";
+		return;
+	}
 	for(int i=0;i<roll_check_file.size();i++)
 	{
 		flag=0;
@@ -198,7 +228,7 @@ void compare_files(string file_path)
 				if(md_5_file[i]==md_5_snap[j])
 				{
 					flag=1;
-					changes.push_back("@"); //take character which is very rare in file
+					changes.push_back('~'); //take character which is very rare in file
 					i+=BLOCK_SIZE-1;
 					vec_same_index.push_back(j);
 					break;
@@ -209,30 +239,34 @@ void compare_files(string file_path)
 		if(flag==0)
 		{
 			// char t=(char)i;
-			cout<<i;
-			changes.push_back(to_string(i));
+			//cout<<"i value\n";
+			cout<<i<<" ";
+			fseek ( iptr , i , SEEK_SET);
+			fread(from_file, 1, 1, iptr);				
+			changes.push_back(from_file[0]);
+			memset(from_file,0x0,sizeof(from_file));
 		}		
 	}	
-	// cout<<"\nmewwwwchanges vector is :"<<endl;
-	// for(auto it = changes.begin(); it!=changes.end();it++)
-	// {
-	// 	//cout<<*it<<endl;
-	// 	printf("%c====\n",(*it)[0] );
-	// }
-	char from_file[5];
-	memset(from_file,0x0,sizeof(from_file));
-	iptr=fopen(file_path.c_str(),"rb");
-	for(int i=0;i<changes.size();i++)
+	cout<<"\nchanges vector is :"<<endl;
+	for(auto it = changes.begin(); it!=changes.end();it++)
 	{
-		if(changes[i]!="@")
-		{
-			fseek ( iptr , changes[i][0]-'0' , SEEK_SET);
-			fread(from_file, 1, 1, iptr);
-			changes[i][0]=from_file[0];
-			memset(from_file,0x0,sizeof(from_file));
-		}
-
+		//cout<<*it<<endl;
+		printf("%c==\n",(*it) );
 	}
+	
+	
+	//iptr=fopen(file_path.c_str(),"rb");
+	// for(int i=0;i<changes.size();i++)
+	// {
+	// 	if(changes[i]!="~")
+	// 	{
+	// 		fseek ( iptr , changes[i][0]-'0' , SEEK_SET);
+	// 		fread(from_file, 1, 1, iptr);
+	// 		changes[i][0]=from_file[0];
+	// 		memset(from_file,0x0,sizeof(from_file));
+	// 	}
+
+	// }
 	fclose(iptr);
 }
 void take_backup(string file_path)
@@ -243,8 +277,8 @@ void take_backup(string file_path)
 	iptr=fopen(file_path.c_str(),"rb");
 	for(int i=0;i<changes.size();i++)
 	{
-		if(changes[i]!="@")
-			file_data+=changes[i][0];
+		if(changes[i]!='~')
+			file_data+=changes[i];
 		else
 		{
 			memset(input_buffer,0x0,sizeof(input_buffer));
@@ -261,64 +295,127 @@ void take_backup(string file_path)
 	fclose(iptr);
 	
 }
-int main()
+
+
+void copy_file(string sourceDir,string destinationDir)
 {
-	// get_chunk_id("a.txt");
-	//get_successive_chunks("a.txt");
-	// roll_check_file.push_back("ab");
-	// roll_check_file.push_back("rt");
-	// roll_check_file.push_back("xy");
-	// roll_check_file.push_back("54");
-	// roll_check_file.push_back("dd");
-	// roll_check_file.push_back("pq");
-
-	
-	// roll_check_snap.push_back("ab");
-	// roll_check_snap.push_back("xy");
-	// roll_check_snap.push_back("54");
-
-	// md_5_file.push_back("3");
-	// md_5_file.push_back("5");
-	// md_5_file.push_back("7");
-	// md_5_file.push_back("9");
-	// md_5_file.push_back("11");
-
-	// md_5_snap.push_back("3");
-	// md_5_snap.push_back("7");
-	// md_5_snap.push_back("9");
-	get_chunk_id("b_snap.txt");
-	cout<<"\nsnap roll\n";
-	for(auto it = roll_check_snap.begin(); it!=roll_check_snap.end();it++)
-	{
-		cout<<*it<<endl;
-	}
-	cout<<"\nsnap md5\n";
-	for(auto it = md_5_snap.begin(); it!=md_5_snap.end();it++)
-	{
-		cout<<*it<<endl;
-	}
-	get_successive_chunks("a.txt");
-	cout<<"\nfile roll\n";
-	for(auto it = roll_check_file.begin(); it!=roll_check_file.end();it++)
-	{
-		cout<<*it<<endl;
-	}
-	cout<<"\nfile md5\n";
-	for(auto it = md_5_file.begin(); it!=md_5_file.end();it++)
-	{
-		cout<<*it<<endl;
-	}
-	compare_files("a.txt");
-	take_backup("b_snap.txt");
-	cout<<"changes vector is :"<<endl;
-	for(auto it = changes.begin(); it!=changes.end();it++)
-	{
-		cout<<*it<<endl;
-	}
-	cout<<"vec_same_index vector is :"<<endl;
-	for(auto it = vec_same_index.begin(); it!=vec_same_index.end();it++)
-	{
-		cout<<*it<<endl;
-	}
+	int fdSource = open(sourceDir.c_str(), O_RDONLY);
+	int fdDestination = open(destinationDir.c_str(), O_RDWR|O_CREAT, S_IRUSR | S_IWUSR);
+	// After successfully opening
+	char buf[1024];
+	ssize_t countSource;
+	ssize_t countDestination;
+	//while((countSource = read(fdSource, buf, sizeof buf)) > 0)
+	//{
+ 	//	countDestination = write(fdDestination, buf, countSource);  
+ 	//}
+ 	//if(countDestination != -1)
+ 	//{
+ 	//  cout<< " Copied file successfully "<<"\n";
+ 	//}
+ 	get_chunk_id(destinationDir);
+	get_successive_chunks(sourceDir);
+	compare_files(sourceDir);
+	take_backup(destinationDir);
+  	
+  	close(fdDestination);
+	close(fdSource);
 }
 
+
+void copy_dir(string full_dir,string destination_dir)
+{
+	DIR* thisDir;
+	DIR* thisDir_dest;
+    struct dirent* thisFile;
+    char buf[512];
+    struct stat st;
+    string file_path;
+    thisDir = opendir( full_dir.c_str() );
+    thisDir_dest = opendir(destination_dir.c_str());
+    //cout<<"shafiya2"<<endl;
+ 	
+ 	int flag_close=0;
+    if (thisDir_dest)
+    {	
+    	flag_close=1;
+    }
+    else if(ENOENT==errno)
+    {
+    	mkdir(destination_dir.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);	
+    }
+    else
+    {
+    	perror("Error ");
+    }
+    
+    while((thisFile = readdir(thisDir))!= NULL)
+   	{
+    	if((thisFile->d_name[0] == '.'))// || (thisFile->d_name == ".."))
+    	{	
+    		continue;
+    	}
+    	//cout<<"shafiya1"<<endl;
+    	sprintf(buf, "%s", thisFile->d_name);
+    	lstat((full_dir + "/" + thisFile->d_name).c_str(),&st);		//set file properties of the children of full_dir
+        if (st.st_mode&S_IFDIR)  	//check file properties for a folder
+        {	  //Is a folder
+        	//mkdir((full_dir + "/" + thisFile->d_name).c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        	copy_dir(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
+        	
+           	
+        }
+        else if(st.st_mode&S_IFREG)		//check file properties for a file
+        {	
+        	copy_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
+
+        		//full_dir = full_dir + "/" + thisFile->d_name;
+        		//cout<<"full_dir is :"<<full_dir<<endl;		
+        }
+    }
+    //rmdir(full_dir.c_str()); 
+    if(flag_close)
+    	closedir(thisDir_dest);
+
+	closedir( thisDir );
+}
+
+int main()
+{
+	// get_chunk_id("b_snap.txt");
+	// cout<<"\nsnap roll\n";
+	// for(auto it = roll_check_snap.begin(); it!=roll_check_snap.end();it++)
+	// {
+	// 	cout<<*it<<endl;
+	// }
+	// cout<<"\nsnap md5\n";
+	// for(auto it = md_5_snap.begin(); it!=md_5_snap.end();it++)
+	// {
+	// 	cout<<*it<<endl;
+	// }
+	// get_successive_chunks("a.txt");
+	// cout<<"\nfile roll\n";
+	// for(auto it = roll_check_file.begin(); it!=roll_check_file.end();it++)
+	// {
+	// 	cout<<*it<<endl;
+	// }
+	// cout<<"\nfile md5\n";
+	// for(auto it = md_5_file.begin(); it!=md_5_file.end();it++)
+	// {
+	// 	cout<<*it<<endl;
+	// }
+	// compare_files("a.txt");
+	// take_backup("b_snap.txt");
+
+
+
+
+
+
+	string source_dir,destination_dir;
+	cout<<"Enter the source directory path :"<<endl;
+	cin>>source_dir;
+	cout<<"Enter the destination directory path :"<<endl;
+	cin>>destination_dir;
+	copy_dir(source_dir,destination_dir);
+}
