@@ -1,8 +1,8 @@
 #include<bits/stdc++.h>
 #include <openssl/md5.h>
 using namespace std;
-#define BLOCK_SIZE 2
 #define M 65536
+#define BLOCK_SIZE 2
 
 // sending from A and B
 // Divide snapshot into fixed size chunks
@@ -68,7 +68,7 @@ void get_chunk_id(string file_path) //for b
 		memset(input_buffer,0x0,sizeof(input_buffer));	        
     	while((bytesread = fread(input_buffer, 1, sizeof(input_buffer), iptr)) > 0) //3rd parameter represent count (how many times to read) 
     	{  
-    		cout<<bytesread<<"\n"<<input_buffer; 
+    		cout<<bytesread<<","<<input_buffer<<endl; 
     		string md5_hash = calculate_md5(input_buffer,bytesread);
         	md_5_snap.push_back(md5_hash);		//md5 hash of each chunk is stored in this vector
         	
@@ -79,16 +79,16 @@ void get_chunk_id(string file_path) //for b
         	ostringstream str1;
         	str1<<roll_params[0];
         	string roll_hash=str1.str();
-        	cout<<"\nMD5 of chunk is :"<< " "<<md5_hash<<endl;
-        	cout<<"Rolling hash of chunk is :"<<" "<<roll_hash<<endl;
+        	//cout<<"\nMD5 of chunk is :"<< " "<<md5_hash<<endl;
+        	//cout<<"Rolling hash of chunk is :"<<" "<<roll_hash<<endl;
 
         	roll_check_snap.push_back(roll_hash);
 
         	memset(input_buffer,0x0,sizeof(input_buffer));
         	count++;
-        	cout<<"count is "<<count<<endl;
-        	cout<<"\n------------------------------------------------------------------\n";
-        	//cout<<"------------------------------------------------------------------";
+        	// cout<<"count is "<<count<<endl;
+        	// cout<<"\n------------------------------------------------------------------\n";
+        	// //cout<<"------------------------------------------------------------------";
         } 
         fclose(iptr);
     }
@@ -108,27 +108,31 @@ void get_successive_chunks(string file_path) // for A
 	{	
 		memset(input_buffer,0x0,sizeof(input_buffer));	
 		int flag=0; 
-		string roll_hash;      
+		string roll_hash; 
+		long long a,b,s;
+				  
 		char prev,curr;
 		while((bytesread = fread(input_buffer, 1, sizeof(input_buffer), iptr)) > 0)
 		{ 
 			if(bytesread!=BLOCK_SIZE)
 				break;
-        	cout<<bytesread<<"\n"<<input_buffer; 
+        	cout<<bytesread<<" "<<input_buffer<<endl; 
 
 			string md5_hash = calculate_md5(input_buffer,bytesread);
         	md_5_file.push_back(md5_hash);		//md5 hash of each chunk is stored in this vector
-        	cout<<"\nMD5 of chunk is :"<< " "<<md5_hash<<endl;
+        	//cout<<"\nMD5 of chunk is :"<< " "<<md5_hash<<endl;
 
 			if(flag==0)
 			{
 				roll_params=calculate_rolling(input_buffer,bytesread);
 
+				a=roll_params[1];
+				b=roll_params[2];   
 
 				ostringstream str1;
 				str1<<roll_params[0];
 				string roll_hash=str1.str();
-				cout<<"Rolling hash of chunk is :"<<" "<<roll_hash<<endl;
+				//cout<<"Rolling hash of chunk is :"<<" "<<roll_hash<<endl;
 
 				roll_check_file.push_back(roll_hash);
 
@@ -137,28 +141,31 @@ void get_successive_chunks(string file_path) // for A
 			}
 			else
 			{
-				long long a,b,s;
-				a=roll_params[1];
-				b=roll_params[2];
-
+				
 				int k=0,l=bytesread-1;
 
 				curr=input_buffer[bytesread-1];
 
+				// cout<<"value of a before :"<<" "<<a<<endl;
+				// cout<<"value of prev :"<<" "<<prev<<endl;
+				// cout<<"value of curr :"<<" "<<curr<<endl;
+
 				a=(a%M-prev%M+curr%M)%M;
 				if(a<0)
 					a = a+M;
+				// cout<<"value of a :"<<" "<<a<<endl;
 				b=(b%M -((l-k+1)*prev)%M+a%M)%M;
 				if(b<0)
 					b = b+M;
-
+				// cout<<"value of b :"<<" "<<b<<endl;
 				s=a+M*b;
+				// cout<<"value of s :"<<" "<<s<<endl;
 
 	
 				ostringstream str1;
 				str1<<s;
 				string roll_hash=str1.str();
-				cout<<"Rolling hash of chunk is :"<<" "<<roll_hash<<endl;
+				//cout<<"Rolling hash of chunk is :"<<" "<<roll_hash<<endl;
 
 				roll_check_file.push_back(roll_hash);
 
@@ -170,8 +177,8 @@ void get_successive_chunks(string file_path) // for A
 			memset(input_buffer,0x0,sizeof(input_buffer));
 			fseek ( iptr , -(bytesread-1) , SEEK_CUR);
 			count++;
-			cout<<"\ncount is "<<count;
-			cout<<"\n------------------------------------------------------------------\n";
+			// cout<<"\ncount is "<<count;
+			// cout<<"\n------------------------------------------------------------------\n";
 		} 
 		fclose(iptr);
 	}
@@ -206,12 +213,12 @@ void compare_files(string file_path)
 			changes.push_back(to_string(i));
 		}		
 	}	
-	cout<<"\nmewwwwchanges vector is :"<<endl;
-	for(auto it = changes.begin(); it!=changes.end();it++)
-	{
-		//cout<<*it<<endl;
-		printf("%c====\n",(*it)[0] );
-	}
+	// cout<<"\nmewwwwchanges vector is :"<<endl;
+	// for(auto it = changes.begin(); it!=changes.end();it++)
+	// {
+	// 	//cout<<*it<<endl;
+	// 	printf("%c====\n",(*it)[0] );
+	// }
 	char from_file[5];
 	memset(from_file,0x0,sizeof(from_file));
 	iptr=fopen(file_path.c_str(),"rb");
@@ -228,60 +235,81 @@ void compare_files(string file_path)
 	}
 	fclose(iptr);
 }
-// void restore(string file_path)
-// {
-// 	string file_data;
-// 	char input_buffer[BLOCK_SIZE];
-// 	int c=-1;
-// 	iptr=fopen(file_path.c_str(),"rb");
-// 	for(int i=0;i<changes.size();i++)
-// 	{
-// 		if(changes[i]!='@')
-// 			file_data+=changes[i];
-// 		else
-// 		{
-// 			memset(input_buffer,0x0,sizeof(input_buffer));
-// 			c++;
-// 			int f_index = vec_same_index[c];			
-// 			fseek(iptr,f_index,SEEK_SET);
-// 			fread(input_buffer, 1, sizeof(input_buffer), iptr);
-// 			file_data+=(string)input_buffer;  //append char* to string
-// 		}
-// 	}
-// 	fclose(iptr);
-// 	iptr=fopen(file_path.c_str(),"w");
-// 	fwrite((char*)file_data.c_str(),1,file_data.size(),iptr);
-// 	fclose(iptr);
+void take_backup(string file_path)
+{
+	string file_data;
+	char input_buffer[BLOCK_SIZE];
+	int c=-1;
+	iptr=fopen(file_path.c_str(),"rb");
+	for(int i=0;i<changes.size();i++)
+	{
+		if(changes[i]!="@")
+			file_data+=changes[i][0];
+		else
+		{
+			memset(input_buffer,0x0,sizeof(input_buffer));
+			c++;
+			int f_index = vec_same_index[c];			
+			fseek(iptr,f_index*BLOCK_SIZE,SEEK_SET);
+			fread(input_buffer, 1, sizeof(input_buffer), iptr);
+			file_data+=(string)input_buffer;  //append char* to string
+		}
+	}
+	fclose(iptr);
+	iptr=fopen(file_path.c_str(),"w");
+	fwrite((char*)file_data.c_str(),1,file_data.size(),iptr);
+	fclose(iptr);
 	
-// }
+}
 int main()
 {
 	// get_chunk_id("a.txt");
 	//get_successive_chunks("a.txt");
-	roll_check_file.push_back("ab");
-	roll_check_file.push_back("rt");
-	roll_check_file.push_back("xy");
-	roll_check_file.push_back("54");
-	roll_check_file.push_back("dd");
-	roll_check_file.push_back("pq");
+	// roll_check_file.push_back("ab");
+	// roll_check_file.push_back("rt");
+	// roll_check_file.push_back("xy");
+	// roll_check_file.push_back("54");
+	// roll_check_file.push_back("dd");
+	// roll_check_file.push_back("pq");
 
 	
-	roll_check_snap.push_back("ab");
-	roll_check_snap.push_back("xy");
-	roll_check_snap.push_back("54");
+	// roll_check_snap.push_back("ab");
+	// roll_check_snap.push_back("xy");
+	// roll_check_snap.push_back("54");
 
-	md_5_file.push_back("3");
-	md_5_file.push_back("5");
-	md_5_file.push_back("7");
-	md_5_file.push_back("9");
-	md_5_file.push_back("11");
+	// md_5_file.push_back("3");
+	// md_5_file.push_back("5");
+	// md_5_file.push_back("7");
+	// md_5_file.push_back("9");
+	// md_5_file.push_back("11");
 
-	md_5_snap.push_back("3");
-	md_5_snap.push_back("7");
-	md_5_snap.push_back("9");
-
+	// md_5_snap.push_back("3");
+	// md_5_snap.push_back("7");
+	// md_5_snap.push_back("9");
+	get_chunk_id("b_snap.txt");
+	cout<<"\nsnap roll\n";
+	for(auto it = roll_check_snap.begin(); it!=roll_check_snap.end();it++)
+	{
+		cout<<*it<<endl;
+	}
+	cout<<"\nsnap md5\n";
+	for(auto it = md_5_snap.begin(); it!=md_5_snap.end();it++)
+	{
+		cout<<*it<<endl;
+	}
+	get_successive_chunks("a.txt");
+	cout<<"\nfile roll\n";
+	for(auto it = roll_check_file.begin(); it!=roll_check_file.end();it++)
+	{
+		cout<<*it<<endl;
+	}
+	cout<<"\nfile md5\n";
+	for(auto it = md_5_file.begin(); it!=md_5_file.end();it++)
+	{
+		cout<<*it<<endl;
+	}
 	compare_files("a.txt");
-	// restore()
+	take_backup("b_snap.txt");
 	cout<<"changes vector is :"<<endl;
 	for(auto it = changes.begin(); it!=changes.end();it++)
 	{
@@ -293,3 +321,4 @@ int main()
 		cout<<*it<<endl;
 	}
 }
+
