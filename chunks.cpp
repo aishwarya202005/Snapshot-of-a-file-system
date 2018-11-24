@@ -2,6 +2,7 @@
 #include <openssl/md5.h>
 using namespace std;
 #define BLOCK_SIZE 2
+#define M 65536
 
 // sending from A and B
 // Divide snapshot into fixed size chunks
