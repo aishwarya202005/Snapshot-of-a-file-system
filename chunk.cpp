@@ -109,6 +109,8 @@ void get_successive_chunks(string file_path) // for A
 		char prev,curr;
 		while((bytesread = fread(input_buffer, 1, sizeof(input_buffer), iptr)) > 0)
 		{ 
+			if(bytesread!=BLOCK_SIZE)
+				break;
         	cout<<bytesread<<"\n"<<input_buffer; 
 
 			string md5_hash = calculate_md5(input_buffer,bytesread);
@@ -141,7 +143,11 @@ void get_successive_chunks(string file_path) // for A
 				curr=input_buffer[bytesread-1];
 
 				a=(a%M-prev%M+curr%M)%M;
+				if(a<0)
+					a = a+M;
 				b=(b%M -((l-k+1)*prev)%M+a%M)%M;
+				if(b<0)
+					b = b+M;
 
 				s=a+M*b;
 
@@ -177,17 +183,17 @@ string compare_files()
 int main()
 {
 	get_chunk_id("a.txt");
-	// cout<<"SNAP is :"<<endl;
-	// for(auto it = roll_check.begin(); it!=roll_check.end();it++)
-	// {
-	// 	cout<<*it<<endl;
-	// }
+	cout<<"SNAP is :"<<endl;
+	for(auto it = roll_check.begin(); it!=roll_check.end();it++)
+	{
+		cout<<*it<<endl;
+	}
 
 	get_successive_chunks("a.txt");
-	// cout<<"File is :"<<endl;
-	// for(auto it = roll_check_file.begin(); it!=roll_check_file.end();it++)
-	// {
-	// 	cout<<*it<<endl;
-	// }
+	cout<<"File is :"<<endl;
+	for(auto it = roll_check_file.begin(); it!=roll_check_file.end();it++)
+	{
+		cout<<*it<<endl;
+	}
 }
 
