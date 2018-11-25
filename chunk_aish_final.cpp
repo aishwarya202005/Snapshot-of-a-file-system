@@ -1,30 +1,6 @@
-#include<bits/stdc++.h>
-#include <openssl/md5.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <iostream>
-#include <termios.h>
-#include <time.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <pwd.h>
-#include <grp.h>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <iomanip>
-#include <errno.h>
-
-using namespace std;
-#define M 65536
-#define BLOCK_SIZE 512
-
+#include "headerfiles.h"
 // sending from A and B
 // Divide snapshot into fixed size chunks
-
 vector<string> roll_check_snap; //weak checksum
 vector<string> md_5_snap; //strong checksum
 vector<string> roll_check_file; //weak checksum
@@ -32,7 +8,8 @@ vector<string> md_5_file; //strong checksum
 vector<char> changes;
 vector<int> vec_same_index; 
 FILE *iptr;
-
+int source_length=0,destination_length=0;
+map<string,int> source_path;
 
 vector<long long> calculate_rolling(char input_buffer[],size_t bytesread)
 {
@@ -49,13 +26,11 @@ vector<long long> calculate_rolling(char input_buffer[],size_t bytesread)
 		b+=((l-i+1)*input_buffer[i])%M;
 	}
 	b=b%M;
-	s=a+M*b;
-	
+	s=a+M*b;	
 	roll_params.push_back(s);
 	roll_params.push_back(a);
 	roll_params.push_back(b);
-	return roll_params;
-	
+	return roll_params;	
 }
 
 string calculate_md5(char input_buffer[],size_t bytesread)
@@ -65,20 +40,18 @@ string calculate_md5(char input_buffer[],size_t bytesread)
 	char mdString[33];
 	for(int i = 0; i < 16; i++)
 		sprintf((char *)&mdString[i*2], "%02x", (unsigned int)digest[i]);
-
-    //printf("md5 digest: %s\n", mdString);
 	return mdString;
 }
 
-//calculate_md5 for B file
-void get_chunk_id(string file_path) //for b
+void get_chunk_id(string file_path) //for B or snap
 {
-	FILE *iptr;	 //fstream---iostream
+	roll_check_snap.clear();
+	md_5_snap.clear();
 	size_t bytesread=0;
 	int count=0;
 	vector<long long> roll_params;
 	char input_buffer[BLOCK_SIZE];	   
-	iptr=fopen(file_path.c_str(),"rb");
+	iptr=fopen(file_path.c_str(),"a+");
 	if(iptr==NULL)
 		printf("Can not open input file \n");
 	else
@@ -86,37 +59,26 @@ void get_chunk_id(string file_path) //for b
 		memset(input_buffer,0x0,sizeof(input_buffer));	        
     	while((bytesread = fread(input_buffer, 1, sizeof(input_buffer), iptr)) > 0) //3rd parameter represents count (how many times to read) 
     	{  
-    		// cout<<bytesread<<endl;
-    		// cout<<input_buffer<<endl; 
     		string md5_hash = calculate_md5(input_buffer,bytesread);
-        	md_5_snap.push_back(md5_hash);		//md5 hash of each chunk is stored in this vector
-        	
-        	//string roll_hash=calculate_rolling(input_buffer,bytesread);
+        	md_5_snap.push_back(md5_hash);		//md5 hash of each chunk is stored in this vector        	
         	roll_params=calculate_rolling(input_buffer,bytesread);
-
-
         	ostringstream str1;
         	str1<<roll_params[0];
-        	string roll_hash=str1.str();
-        	//cout<<"\nMD5 of chunk is :"<< " "<<md5_hash<<endl;
-        	//cout<<"Rolling hash of chunk is :"<<" "<<roll_hash<<endl;
-
+        	string roll_hash=str1.str();        	
         	roll_check_snap.push_back(roll_hash);
-
         	memset(input_buffer,0x0,sizeof(input_buffer));
         	count++;        	
         } 
         fclose(iptr);
-        cout<<"\n------------------------------------------------------------------\n";
-        cout<<"count for B chunks "<<count<<endl;
-        
-        cout<<"------------------------------------------------------------------";
+        // cout<<"\n------------------------------------------------------------------\n";
+        // cout<<"count for B chunks "<<count<<endl;        
+        // cout<<"------------------------------------------------------------------";
     }
 }
-// Divide original file into chunks
 void get_successive_chunks(string file_path) // for A
 {
-	FILE *iptr;	 //fstream---iostream
+	roll_check_file.clear();
+	md_5_file.clear();
 	size_t bytesread=0;
 	int count=0;
 	vector<long long> roll_params;
@@ -136,13 +98,8 @@ void get_successive_chunks(string file_path) // for A
 		while((bytesread = fread(input_buffer, 1, sizeof(input_buffer), iptr)) > 0)
 		{ 
 			chunks_count++;
-			
-        	//cout<<bytesread<<" "<<input_buffer<<endl; 
-
 			string md5_hash = calculate_md5(input_buffer,bytesread);
         	md_5_file.push_back(md5_hash);		//md5 hash of each chunk is stored in this vector
-        	//cout<<"\nMD5 of chunk is :"<< " "<<md5_hash<<endl;
-
         	if(flag==0)
         	{
         		roll_params=calculate_rolling(input_buffer,bytesread);
@@ -192,14 +149,16 @@ void get_successive_chunks(string file_path) // for A
         	count++;			
         } 
         fclose(iptr);
-        cout<<"\n-------------------------------------------------------------------------------------------------\n";
-        cout<<"chunks for A is "<<chunks_count<<endl;
+        // cout<<"\n-------------------------------------------------------------------------------------------------\n";
+        // cout<<"chunks for A is "<<chunks_count<<endl;
     }
 }
 
 // to find differences between file1,file2 using weak and strong
 void compare_files(string file_path) 
 {
+	changes.clear();
+	vec_same_index.clear();
 	int flag,j;	
 	char from_file[5];
 	memset(from_file,0x0,sizeof(from_file));
@@ -212,20 +171,18 @@ void compare_files(string file_path)
 	for(int i=0;i<roll_check_file.size();i++)
 	{
 		flag=0;
-		cout<<"value of i is "<<i<<endl;
+		
 		for( j=0;j<roll_check_snap.size();j++)
-		{
-			cout<<"in j\n";
+		{			
 			if(roll_check_file[i]==roll_check_snap[j])
 			{				
 				if(md_5_file[i]==md_5_snap[j])
 				{
 					flag=1;
-					cout<<"matched......"<<endl;
+					// cout<<"matched......"<<endl;
 					changes.push_back('~'); //take character which is very rare in file
 					i+=BLOCK_SIZE-1;
-					vec_same_index.push_back(j);
-					cout<<"New value of i is-------- "<<i<<endl;
+					vec_same_index.push_back(j);					
 					break;
 				}
 				
@@ -233,35 +190,13 @@ void compare_files(string file_path)
 		}
 		if(flag==0)
 		{
-			// char t=(char)i;
-			//cout<<"i value\n";
-			//cout<<i<<" ";
 			fseek ( iptr , i , SEEK_SET);
 			fread(from_file, 1, 1, iptr);				
 			changes.push_back(from_file[0]);
 			memset(from_file,0x0,sizeof(from_file));
 		}		
 	}	
-	// cout<<"\nchanges vector is :"<<endl;
-	// for(auto it = changes.begin(); it!=changes.end();it++)
-	// {
-	// 	//cout<<*it<<endl;
-	// 	printf("%c==\n",(*it) );
-	// }
 	
-	
-	//iptr=fopen(file_path.c_str(),"rb");
-	// for(int i=0;i<changes.size();i++)
-	// {
-	// 	if(changes[i]!="~")
-	// 	{
-	// 		fseek ( iptr , changes[i][0]-'0' , SEEK_SET);
-	// 		fread(from_file, 1, 1, iptr);
-	// 		changes[i][0]=from_file[0];
-	// 		memset(from_file,0x0,sizeof(from_file));
-	// 	}
-
-	// }
 	fclose(iptr);
 }
 void take_backup(string file_path)
@@ -271,12 +206,15 @@ void take_backup(string file_path)
 	int c=-1,flg=0;
 	
 
-	if(changes.empty())
+	if(changes.empty() && roll_check_snap.size()==0)
+	{			
+		return;	
+	}
+	else if(changes.empty())
 	{
 		
 		iptr=fopen(file_path.c_str(),"wb");
-		fclose(iptr);
-		cout<<"LLLLLLLLLLL";
+		fclose(iptr);		
 		return;	
 	}
 
@@ -291,17 +229,14 @@ void take_backup(string file_path)
 
 	if(flg==0)
 		return;
-
-
-
 	iptr=fopen(file_path.c_str(),"rb");
 	for(int i=0;i<changes.size();i++)
 	{
 		if(changes[i]!='~')
 		{
-			//cout<<"\nCHANgS of i>>>";
+			
 			file_data+=changes[i];
-			//cout<<changes[i]<<endl;
+			
 		}
 		else
 		{
@@ -315,19 +250,12 @@ void take_backup(string file_path)
 			{
 				file_data+=input_buffer[i];
 			}
-			//string str1=(string) input_buffer;
-			//str1 = str1.substr(0, str1.size()-1);
-			//file_data+=str1;  //append char* to string
-			// cout<<"\ninput_buffer->>"<<input_buffer<<endl;
 
-			cout<<"<>file-data---------------------->>"<<file_data;
-			cout<<"<>end file-data---------------------->>\n";
 		}
 	}
 	fclose(iptr);
 	iptr=fopen(file_path.c_str(),"w");
-	//cout<<"\n--0-0-"<<file_data<<endl;
-	//cout<<"--0-0-";
+	
 	fwrite((char*)file_data.c_str(),1,file_data.size(),iptr);
 	fclose(iptr);
 	
@@ -339,6 +267,7 @@ void copy_file(string sourceDir,string destinationDir)
 	get_successive_chunks(sourceDir);
 	compare_files(sourceDir);
 	take_backup(destinationDir);
+
 }
 
 
@@ -347,17 +276,14 @@ void copy_dir(string full_dir,string destination_dir)
 	DIR* thisDir;
 	DIR* thisDir_dest;
 	struct dirent* thisFile;
-	char buf[512];
+	char buf[BLOCK_SIZE];
 	struct stat st;
 	string file_path;
 	thisDir = opendir( full_dir.c_str() );
-	thisDir_dest = opendir(destination_dir.c_str());
-    //cout<<"shafiya2"<<endl;
-
-	int flag_close=0;
+	thisDir_dest = opendir(destination_dir.c_str());	
 	if (thisDir_dest)
 	{	
-		flag_close=1;
+		closedir(thisDir_dest);
 	}
 	else if(ENOENT==errno)
 	{
@@ -366,42 +292,161 @@ void copy_dir(string full_dir,string destination_dir)
 	else
 	{
 		perror("Error ");
-	}
-
+	}	
 	while((thisFile = readdir(thisDir))!= NULL)
 	{
-		cout<<"Inside Source Directory\n";
+		//cout<<"Inside Source Directory\n";
     	if((thisFile->d_name[0] == '.'))// || (thisFile->d_name == ".."))
     	{	
     		continue;
     	}
-    	//cout<<"shafiya1"<<endl;
-    	sprintf(buf, "%s", thisFile->d_name);
+    	//sprintf(buf, "%s", thisFile->d_name);
+
+
+
     	lstat((full_dir + "/" + thisFile->d_name).c_str(),&st);		//set file properties of the children of full_dir
+
+    	string fullPath=full_dir + "/" + thisFile->d_name;
+    	//string.substr(start, end-start+1);
+    	string subFullPath=fullPath.substr(source_length,fullPath.length()-source_length+1);
+    	source_path[subFullPath]++;
+
         if (st.st_mode&S_IFDIR)  	//check file properties for a folder
-        {	  //Is a folder
-        	//mkdir((full_dir + "/" + thisFile->d_name).c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        	cout<<"Inside Inside Source Directory\n";
-    	
-        	copy_dir(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
-        	
+        {	  
+        	copy_dir(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);        	
 
         }
         else if(st.st_mode&S_IFREG)		//check file properties for a file
-        {	
-        	cout<<"Inside Inside Source file\n";
-        	copy_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
-
-        		//full_dir = full_dir + "/" + thisFile->d_name;
-        		//cout<<"full_dir is :"<<full_dir<<endl;		
+        {        	
+        	copy_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);        		
         }
     }
-    //rmdir(full_dir.c_str()); 
-    if(flag_close)
-    	closedir(thisDir_dest);
-
     closedir( thisDir );
+    // cout<<"SOURCE MAP\n";
+    // for(auto k:source_path)
+    // {
+    // 	cout<<k.first<<"\n";
+    // }
 }
+
+void delete_file(string file_path)
+{
+	int flag;
+	// string curr_dir = get_current_dir_name();
+	// string full_dir;
+	// full_dir = curr_dir + "/" + oldDir;
+	flag = remove(file_path.c_str());
+	// if(flag == 0)
+	// 	cout<<"File successfully deleted"<<"\n";
+	// else
+	// 	cout<<"Cannot delete file"<<"\n";
+}
+
+void delete_subdir(string full_dir)
+{
+	DIR* thisDir;
+	struct dirent* thisFile;
+	char buf[512];
+	struct stat st;
+	string file_path;
+	thisDir = opendir( full_dir.c_str() );
+
+	while((thisFile = readdir(thisDir))!= NULL)
+	{
+		if((thisFile->d_name[0] == '.'))
+		{	
+			continue;
+		}
+		sprintf(buf, "%s", thisFile->d_name);
+		lstat((full_dir + "/" + thisFile->d_name).c_str(),&st);
+		if (st.st_mode&S_IFDIR)
+		{	  
+			delete_subdir((full_dir + "/" + thisFile->d_name));
+
+
+		}
+		else if(st.st_mode&S_IFREG)
+		{	
+
+			remove((full_dir + "/" + thisFile->d_name).c_str());
+		}
+	}
+	rmdir(full_dir.c_str());    
+	closedir( thisDir );
+}
+
+
+
+
+
+
+
+void delete_dir(string destination_dir)
+{
+	// DIR* thisDir;
+	DIR* thisDir_dest;
+	struct dirent* thisFile;
+	// char buf[BLOCK_SIZE];
+	struct stat st;
+	string fullPath;
+	// thisDir = opendir( full_dir.c_str() );
+	thisDir_dest = opendir(destination_dir.c_str());	
+	while((thisFile = readdir(thisDir_dest))!= NULL)
+	{
+    	if((thisFile->d_name[0] == '.'))// || (thisFile->d_name == ".."))
+    	{	
+    		continue;
+    	}
+
+    	fullPath=destination_dir + "/" + thisFile->d_name;
+    	// cout<<"fullPath is :"<<fullPath<<endl;
+    	lstat(fullPath.c_str(),&st);		//set file properties of the children of full_dir
+    	// cout<<"destination_length in delete_dir is :"<<destination_length<<endl;
+    	// cout<<"fullPath length is :"<<fullPath<<endl;
+    	// cout<<"second parameter is :"<<fullPath.length()-destination_length+1<<endl;
+    	string subFullPath=fullPath.substr(destination_length,fullPath.length()-destination_length+1);
+    	// cout<<"subFullPath is :"<<subFullPath<<endl;
+    	
+    	if(source_path[subFullPath])
+    	{
+    		if (st.st_mode&S_IFDIR)  	//check file properties for a folder
+			{	  
+				delete_dir(fullPath);
+			}
+			// else if(st.st_mode&S_IFREG)	
+			// {
+			// 	delete_file(fullPath);
+			// }
+    		
+    	}   
+    	else
+    	{
+			if (st.st_mode&S_IFDIR)  	//check file properties for a folder
+			{	  
+				delete_subdir(fullPath);
+			}
+			else if(st.st_mode&S_IFREG)	
+			{
+				delete_file(fullPath);
+			}
+		} 	
+
+	}
+	closedir( thisDir_dest );
+
+}
+
+void Snapshot(string source_dir,string destination_dir)
+{
+
+	source_length=source_dir.length();
+	// cout<<"source_length is :"<<source_length<<endl;
+	destination_length=destination_dir.length();
+	// cout<<"destination_length is :"<<destination_length<<endl;
+	copy_dir(source_dir,destination_dir);
+	delete_dir(destination_dir);
+}
+
 int main()
 {
 	// get_chunk_id("b_snap.txt");
@@ -450,7 +495,7 @@ int main()
 	cin>>source_dir;
 	cout<<"Enter the destination directory path :"<<endl;
 	cin>>destination_dir;
-	copy_dir(source_dir,destination_dir);
 
+	Snapshot(source_dir,destination_dir);
 }
 
