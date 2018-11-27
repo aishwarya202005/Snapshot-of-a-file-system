@@ -374,6 +374,7 @@ void copy_dir(string full_dir,string destination_dir)
 	struct dirent* thisFile;
 	char buf[BLOCK_SIZE];
 	struct stat st;
+	struct utimbuf puttime;
 	string file_path;
 	thisDir = opendir( full_dir.c_str() );
 	thisDir_dest = opendir(destination_dir.c_str());	
