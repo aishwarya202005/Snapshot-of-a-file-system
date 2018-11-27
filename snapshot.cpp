@@ -13,10 +13,7 @@ map<string,int> source_path;
 
 vector<long long> calculate_rolling(char input_buffer[],size_t bytesread)
 {
-<<<<<<< HEAD
 	//cout<<"inside calculate_rolling"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	int k=0,l=bytesread-1;
 	long long a=0,b=0,s=0;
 	vector<long long> roll_params;
@@ -39,10 +36,7 @@ vector<long long> calculate_rolling(char input_buffer[],size_t bytesread)
 
 string calculate_md5(char input_buffer[],size_t bytesread)
 {
-<<<<<<< HEAD
 	//cout<<"inside calculate_md5"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	unsigned char digest[MD5_DIGEST_LENGTH];
 	MD5((unsigned char*)input_buffer, bytesread, (unsigned char*)&digest);    
 	char mdString[33];
@@ -53,10 +47,7 @@ string calculate_md5(char input_buffer[],size_t bytesread)
 
 void get_chunk_id(string file_path) //for B or snap
 {
-<<<<<<< HEAD
 	cout<<"get_chunk_id"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	roll_check_snap.clear();
 	md_5_snap.clear();
 	size_t bytesread=0;
@@ -89,10 +80,7 @@ void get_chunk_id(string file_path) //for B or snap
 }
 void get_successive_chunks(string file_path) // for A
 {
-<<<<<<< HEAD
 	cout<<"inside get_successive_chunks--------------"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	roll_check_file.clear();
 	md_5_file.clear();
 	size_t bytesread=0;
@@ -173,10 +161,7 @@ void get_successive_chunks(string file_path) // for A
 // to find differences between file1,file2 using weak and strong
 void compare_files(string file_path) 
 {
-<<<<<<< HEAD
 	cout<<"inside compare_files--------"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	changes.clear();
 	vec_same_index.clear();
 	int flag,j;	
@@ -221,10 +206,7 @@ void compare_files(string file_path)
 }
 void take_backup(string file_path)
 {
-<<<<<<< HEAD
 	cout<<"inside take_backup"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	string file_data="";
 	char input_buffer[BLOCK_SIZE];
 	int c=-1,flg=0;
@@ -287,11 +269,7 @@ void take_backup(string file_path)
 
 void copy_file(string sourceDir,string destinationDir)
 {
-<<<<<<< HEAD
 	cout<<"inside copy_file"<<endl;
-=======
-
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	get_chunk_id(destinationDir);
 	get_successive_chunks(sourceDir);
 	compare_files(sourceDir);
@@ -301,10 +279,7 @@ void copy_file(string sourceDir,string destinationDir)
 
 void copy_others(string sourceDir,string destinationDir)
 { 
-<<<<<<< HEAD
 	cout<<"inside copy_others"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
     FILE *fptr1, *fptr2; 
     
     fptr1 = fopen(sourceDir.c_str(), "rb"); 
@@ -335,24 +310,16 @@ void copy_others(string sourceDir,string destinationDir)
 }
 void copy_non_text_file(string sourceDir,string destinationDir)
 {
-<<<<<<< HEAD
 	cout<<"inside copy_non_text_file"<<endl;
 	// get_chunk_id(destinationDir);
 	iptr=fopen(destinationDir.c_str(),"rb");
 	if(!iptr)
 	{
 		cout<<"inside if\n";
-=======
-
-	get_chunk_id(destinationDir);
-	if(roll_check_snap.size()==0)
-	{
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 		copy_others(sourceDir,destinationDir);
 	}
 	else
 	{
-<<<<<<< HEAD
 		cout<<"else======\n";
 		struct stat st;
 		cout<<"lstat\n";
@@ -390,23 +357,6 @@ void copy_non_text_file(string sourceDir,string destinationDir)
 		}
 		// fread(buff2,1,size_dest,iptr);
 		// string hash_des=calculate_md5(buff2,size_dest);
-=======
-		struct stat st;
-		lstat((sourceDir).c_str(),&st);	
-		int size_source=st.st_size;
-		lstat((destinationDir).c_str(),&st);	
-		int size_dest=st.st_size;
-		char buff1[size_source],buff2[size_dest];
-		iptr=fopen(sourceDir.c_str(),"rb");
-
-		fread(buff1,1,size_source,iptr);
-		string hash_src=calculate_md5(buff1,size_source);
-		fclose(iptr);
-
-		iptr=fopen(destinationDir.c_str(),"rb");
-		fread(buff2,1,size_dest,iptr);
-		string hash_des=calculate_md5(buff2,size_dest);
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 		fclose(iptr);
 		
 		if(hash_src==hash_des)
@@ -418,10 +368,7 @@ void copy_non_text_file(string sourceDir,string destinationDir)
 
 void copy_dir(string full_dir,string destination_dir)
 {
-<<<<<<< HEAD
 	cout<<"inside copy_dir"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	DIR* thisDir;
 	DIR* thisDir_dest;
 	struct dirent* thisFile;
@@ -461,12 +408,8 @@ void copy_dir(string full_dir,string destination_dir)
     	source_path[subFullPath]++;
 
         if (st.st_mode&S_IFDIR)  	//check file properties for a folder
-<<<<<<< HEAD
         {	
         	cout<<thisFile->d_name<<"is dir "<<endl; 
-=======
-        {	  
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
         	copy_dir(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);        	
 
         }
@@ -474,7 +417,6 @@ void copy_dir(string full_dir,string destination_dir)
         {        	
         	string fname=thisFile->d_name;
         	int fl=0;
-<<<<<<< HEAD
         	char *token = strtok((char*)fname.c_str(), "."); 	
         	printf("%s ->token aftr frst strtok\n", token);	        	  
 		    char tmp[]="";
@@ -495,24 +437,7 @@ void copy_dir(string full_dir,string destination_dir)
 			string tt=(string) tmp;
 			if(tt=="txt"||tt=="cpp"||tt=="h"||tt=="docx"||tt=="css"||tt=="js"||tt=="py"||tt=="xml"||tt=="sh"||tt=="c")
 			{
-				cout<<"this is text file\n";
-=======
-        	char *token = strtok((char*)fname.c_str(), "."); 		        	  
-		    char tt[]="";
-		    while (token != NULL) 
-		    { 
-		    	fl=1;
-		        strcpy(tt,token);
-		        token = strtok(NULL, "-"); 
-		    } 
-			 printf("%s\n", tt); 
-			if(fl==0)
-			{
-				strcpy(tt,"txt");
-			}
-			if(tt=="txt"||tt=="cpp"||tt=="h"||tt=="docx")
-			{
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
+				cout<<"this is text\n";
 				copy_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
 			}
 			else
@@ -533,10 +458,7 @@ void copy_dir(string full_dir,string destination_dir)
 
 void delete_file(string file_path)
 {
-<<<<<<< HEAD
 	cout<<"inside delete_file"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	int flag;
 	// string curr_dir = get_current_dir_name();
 	// string full_dir;
@@ -550,10 +472,7 @@ void delete_file(string file_path)
 
 void delete_subdir(string full_dir)
 {
-<<<<<<< HEAD
 	cout<<"inside delete_subdir"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	DIR* thisDir;
 	struct dirent* thisFile;
 	char buf[512];
@@ -593,10 +512,7 @@ void delete_subdir(string full_dir)
 
 void delete_dir(string destination_dir)
 {
-<<<<<<< HEAD
 	cout<<"inside delete_dir"<<endl;
-=======
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	// DIR* thisDir;
 	DIR* thisDir_dest;
 	struct dirent* thisFile;
@@ -652,11 +568,7 @@ void delete_dir(string destination_dir)
 
 void Snapshot(string source_dir,string destination_dir)
 {
-<<<<<<< HEAD
 	cout<<"inside snapshot=="<<endl;
-=======
-
->>>>>>> e3d9ea126cb745c1293d71cfac4bcf583384b85b
 	source_length=source_dir.length();
 	// cout<<"source_length is :"<<source_length<<endl;
 	destination_length=destination_dir.length();
