@@ -17,6 +17,7 @@ using namespace std;
 #define M 65536
 #define BLOCK_SIZE 512
 
+
 vector<string> roll_check_snap; //weak checksum
 vector<string> md_5_snap; //strong checksum
 vector<string> roll_check_file; //weak checksum
