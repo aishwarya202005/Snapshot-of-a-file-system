@@ -21,10 +21,19 @@ int main()
 	if(destination_dir[0]!='.')
 		destination_dir="."+destination_dir;
 
+
 	// source_dir="/home/kopal/Documents/Subjects/OS/OS_PROJECT/demo";
 	// destination_dir="/home/kopal/Documents/Subjects/OS/OS_PROJECT/.demo_snap";
 
-	
+
 
 	Snapshot(source_dir,destination_dir);
+
+	struct utimbuf puttime;
+	
+	time_t now =time(0);
+	puttime.modtime = now;
+	puttime.actime = now;
+
+	utime(destination_dir.c_str(), &puttime);
 }

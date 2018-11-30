@@ -44,7 +44,7 @@ void copy_others(string sourceDir,string destinationDir)
 //function to compare non text file like mp3 or mp4
 void copy_non_text_file(string sourceDir,string destinationDir)
 {
-	 get_chunk_id(destinationDir);
+	get_chunk_id(destinationDir);
 	iptr=fopen(destinationDir.c_str(),"rb");
 	if(!iptr)
 	{		
@@ -92,6 +92,7 @@ void copy_dir(string full_dir,string destination_dir)
 	struct dirent* thisFile;
 	char buf[BLOCK_SIZE];
 	struct stat st;
+	struct stat st1;
 	struct utimbuf puttime;
 	string file_path;
 	thisDir = opendir( full_dir.c_str() );
@@ -102,7 +103,7 @@ void copy_dir(string full_dir,string destination_dir)
 	}
 	else if(ENOENT==errno)
 	{
-		mkdir(destination_dir.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);	
+		mkdir(destination_dir.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	}
 	else
 	{
@@ -132,35 +133,10 @@ void copy_dir(string full_dir,string destination_dir)
         }
         else if(st.st_mode&S_IFREG)		//check file properties for a file
         {        	
-        	string fname=thisFile->d_name;
-        	int fl=0;
-        	char *token = strtok((char*)fname.c_str(), ".");	        	  
-        	char tmp[100]="";
-        	while (token != NULL) 
-        	{ 
-        		fl=1;
-        		strcpy(tmp,token);
-        		token = strtok(NULL, "."); 
-        	} 
-        	//printf("%s\n", tmp);
-			//if no extension 
-        	if(fl==0)
-        	{
-        		strcpy(tmp,"txt");
-        	}        	
-        	string tt=(string) tmp;
-        	if(tt=="txt"||tt=="cpp"||tt=="h"||tt=="docx"||tt=="css"||tt=="js"||tt=="py"||tt=="xml"||tt=="sh"||tt=="c"||tt=="html")
-        	{
-        		copy_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
-        		lchown((destination_dir + "/" + thisFile->d_name).c_str(),st.st_uid,st.st_gid);
-        		chmod((destination_dir + "/" + thisFile->d_name).c_str(),st.st_mode);
-        		puttime.modtime = st.st_mtime;
-        		puttime.actime = st.st_atime;
-        		utime((destination_dir + "/" + thisFile->d_name).c_str(), &puttime); 
-        	}
-        	else
-        	{
-        		copy_non_text_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
+        	iptr=fopen((destination_dir + "/" + thisFile->d_name).c_str(),"rb");
+        	if(!iptr)
+        	{		
+        		copy_others(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
         		lchown((destination_dir + "/" + thisFile->d_name).c_str(),st.st_uid,st.st_gid);
         		chmod((destination_dir + "/" + thisFile->d_name).c_str(),st.st_mode);
         		puttime.modtime = st.st_mtime;
@@ -168,6 +144,54 @@ void copy_dir(string full_dir,string destination_dir)
         		utime((destination_dir + "/" + thisFile->d_name).c_str(), &puttime); 
         	}
 
+        	else
+        	{
+        		lstat((destination_dir + "/" + thisFile->d_name).c_str(),&st1);	
+        		
+        		// printf("Modification time of source = %s\n", ctime(&st.st_mtime));
+        		// printf("Modification time of destination = %s\n", ctime(&st1.st_mtime));
+
+        		char stime[20];
+        		strcpy(stime,ctime(&st.st_mtime));
+        		char destime[20];
+        		strcpy(destime,ctime(&st1.st_mtime));
+    			//comparing time of modification
+        		if(strcmp(stime,destime) == 0)
+        		{
+        			continue;
+        		}
+        		// cout<<"not same\n";
+        		string fname=thisFile->d_name;
+
+        		char *token = strtok((char*)fname.c_str(), ".");	        	  
+        		char tmp[100]="";
+        		while (token != NULL) 
+        		{ 
+        			strcpy(tmp,token);
+        			token = strtok(NULL, "."); 
+        		} 
+
+        		string tt=(string) tmp;
+        		if(tt=="txt"||tt=="cpp"||tt=="h"||tt=="docx"||tt=="css"||tt=="js"||tt=="py"||tt=="xml"||tt=="sh"||tt=="c"||tt=="html")
+        		{
+        			copy_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
+        			lchown((destination_dir + "/" + thisFile->d_name).c_str(),st.st_uid,st.st_gid);
+        			chmod((destination_dir + "/" + thisFile->d_name).c_str(),st.st_mode);
+        			puttime.modtime = st.st_mtime;
+        			puttime.actime = st.st_atime;
+        			utime((destination_dir + "/" + thisFile->d_name).c_str(), &puttime); 
+        		}
+        		else
+        		{
+        			copy_non_text_file(full_dir + "/" + thisFile->d_name,destination_dir + "/" + thisFile->d_name);
+        			lchown((destination_dir + "/" + thisFile->d_name).c_str(),st.st_uid,st.st_gid);
+        			chmod((destination_dir + "/" + thisFile->d_name).c_str(),st.st_mode);
+        			puttime.modtime = st.st_mtime;
+        			puttime.actime = st.st_atime;
+        			utime((destination_dir + "/" + thisFile->d_name).c_str(), &puttime); 
+        		}
+
+        	}        	
         	
         }
     }
@@ -242,7 +266,7 @@ void delete_dir(string destination_dir)
     		{	  
     			delete_dir(fullPath);
     		}
-			
+
     	}   
     	else
     	{
