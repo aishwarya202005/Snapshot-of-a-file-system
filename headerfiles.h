@@ -16,8 +16,6 @@
 using namespace std;
 #define M 65536
 #define BLOCK_SIZE 512
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
 
 
 vector<string> roll_check_snap; //weak checksum
