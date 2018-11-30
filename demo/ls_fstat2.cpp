@@ -9,28 +9,7 @@
 #include <grp.h>
 
 
-int main()
-{
-
-    //Defining the different components of the program
-        //The directory: it's the folder we're browsing (we'll use an argument (argv) in order to identify it)
-    DIR *thedirectory;
-        //The file: when a file is found in the directory readdir loop, it's going to be called this way.
-    struct dirent *thefile;
-        //The stat: It's how we'll retrieve the stats associated to the file. 
-    struct stat thestat;
-        //will be used to determine the file owner & group
-    struct passwd *tf; 
-    struct group *gf;
-
-    //Creating a placeholder for the string. 
-    //We create this so later it can be properly adressed.
-    //It's reasonnable here to consider a 512 maximum lenght, as we're just going to use it to display a path to a file, 
-    //but we could have used a strlen/malloc combo and declared a simple buf[] at this moment
-    char buf[512];
-
-    //It's time to assign thedirectory to the argument: this way the user will be able to browse any folder simply by mentionning it 
-    //when launching the lsd program.
+ launching the lsd program.
     thedirectory = opendir("/home/shafiya/Documents/IIITH_Monsoon_2018/OS/assignment1");
 
     //If a file is found (readdir returns a NOT NULL value), the loop starts/keep going until it has listed all of them. 
